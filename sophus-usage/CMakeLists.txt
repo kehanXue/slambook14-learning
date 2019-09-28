@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(useEigen)
+project(useSophus)
 
 add_compile_options(-std=c++11)
 set(CMAKE_BUILD_TYPE "Release")
