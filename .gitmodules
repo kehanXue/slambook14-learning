@@ -1,0 +1,3 @@
+[submodule "sophus-usage/Sophus"]
+	path = sophus-usage/Sophus
+	url = git@github.com:strasdat/Sophus.git
