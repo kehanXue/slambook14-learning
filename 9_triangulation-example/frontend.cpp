@@ -4,6 +4,8 @@
 
 #include "frontend.h"
 
+using namespace cv;
+
 
 cv::Point2d pixel2cam(const cv::Point2d &p, const cv::Mat &K)
 {
@@ -68,20 +70,20 @@ void find_feature_matches(cv::Mat &_img_1,
 
 
 void pose_estimation_2d2d(
-        std::vector<cv::KeyPoint> keypoints_1,
-        std::vector<cv::KeyPoint> keypoints_2,
-        std::vector<cv::DMatch> matches,
-        cv::Mat &R, cv::Mat &t)
+        std::vector<cv::KeyPoint> &_keypoints_1,
+        std::vector<cv::KeyPoint> &_keypoints_2,
+        std::vector<cv::DMatch> &_matches,
+        cv::Mat &_R, cv::Mat &_t)
 {
     cv::Mat K = (cv::Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
 
     vector<cv::Point2f> points1;
     vector<cv::Point2f> points2;
 
-    for (auto &match : matches)
+    for (auto &match : _matches)
     {
-        points1.push_back(keypoints_1[match.queryIdx].pt);
-        points2.push_back(keypoints_2[match.trainIdx].pt);
+        points1.push_back(_keypoints_1[match.queryIdx].pt);
+        points2.push_back(_keypoints_2[match.trainIdx].pt);
     }
 
     cv::Mat fundamental_matrix;
@@ -99,54 +101,51 @@ void pose_estimation_2d2d(
     homography_matrix = cv::findHomography(points1, points2, cv::RANSAC, 3, cv::noArray(), 2000, 0.99);
     cout << "homography_matrix is " << endl << homography_matrix << endl;
 
-    cv::recoverPose(essential_matrix, points1, points2, R, t, focal_length, principal_point);
-    cout << "R is " << endl << R << endl;
-    cout << "t is " << endl << t << endl;
+    cv::recoverPose(essential_matrix, points1, points2, _R, _t, focal_length, principal_point);
+    cout << "R is " << endl << _R << endl;
+    cout << "t is " << endl << _t << endl;
 
 }
 
 
-void triangulation(const vector<cv::KeyPoint> &keypoint_1,
-                   const vector<cv::KeyPoint> &keypoint_2,
-                   const std::vector<cv::DMatch> &matches,
-                   const cv::Mat &R,
-                   const cv::Mat &t,
-                   vector<cv::Point3d> &points)
+void triangulation(const vector<cv::KeyPoint> &_keypoint_1,
+                   const vector<cv::KeyPoint> &_keypoint_2,
+                   const std::vector<cv::DMatch> &_matches,
+                   const cv::Mat &_R,
+                   const cv::Mat &_t,
+                   vector<cv::Point3d> &_points)
 {
-    cv::Mat T1 =
-            (cv::Mat_<double>(3, 4) <<
-                    1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0);
+    Mat T1 = (Mat_<float>(3, 4) <<
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0);
+    Mat T2 = (Mat_<float>(3, 4) <<
+            _R.at<double>(0, 0), _R.at<double>(0, 1), _R.at<double>(0, 2), _t.at<double>(0, 0),
+            _R.at<double>(1, 0), _R.at<double>(1, 1), _R.at<double>(1, 2), _t.at<double>(1, 0),
+            _R.at<double>(2, 0), _R.at<double>(2, 1), _R.at<double>(2, 2), _t.at<double>(2, 0)
+    );
 
-    cv::Mat T2 =
-            (cv::Mat_<double>(3, 4) <<
-                    R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0),
-                    R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0),
-                    R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0));
-
-    cv::Mat K = (cv::Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
-
-    vector<cv::Point2d> pts_1, pts_2;
-    for (cv::DMatch m:matches)
+    Mat K = (Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
+    vector<Point2f> pts_1, pts_2;
+    for (DMatch m:_matches)
     {
-        pts_1.push_back(pixel2cam(keypoint_1[m.queryIdx].pt, K));
-        pts_2.push_back(pixel2cam(keypoint_2[m.trainIdx].pt, K));
+        pts_1.push_back(pixel2cam(_keypoint_1[m.queryIdx].pt, K));
+        pts_2.push_back(pixel2cam(_keypoint_2[m.trainIdx].pt, K));
     }
 
-    cv::Mat pts_4d;
+    Mat pts_4d;
     cv::triangulatePoints(T1, T2, pts_1, pts_2, pts_4d);
 
     for (int i = 0; i < pts_4d.cols; i++)
     {
-        cv::Mat x = pts_4d.col(i);
+        Mat x = pts_4d.col(i);
         x /= x.at<float>(3, 0);
-        cv::Point3d p(
+        Point3d p(
                 x.at<float>(0, 0),
                 x.at<float>(1, 0),
-                x.at<float>(2, 0));
-
-        points.push_back(p);
+                x.at<float>(2, 0)
+        );
+        _points.push_back(p);
     }
 
 }

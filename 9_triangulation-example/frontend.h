@@ -23,17 +23,17 @@ void find_feature_matches(cv::Mat &_img_1,
                           vector<cv::DMatch> &_matches);
 
 void pose_estimation_2d2d(
-        std::vector<cv::KeyPoint> keypoints_1,
-        std::vector<cv::KeyPoint> keypoints_2,
-        std::vector<cv::DMatch> matches,
-        cv::Mat &R, cv::Mat &t);
+        std::vector<cv::KeyPoint> &_keypoints_1,
+        std::vector<cv::KeyPoint> &_keypoints_2,
+        std::vector<cv::DMatch> &_matches,
+        cv::Mat &_R, cv::Mat &_t);
 
 void triangulation(
-        const vector<cv::KeyPoint> &keypoint_1,
-        const vector<cv::KeyPoint> &keypoint_2,
-        const std::vector<cv::DMatch> &matches,
-        const cv::Mat &R, const cv::Mat &t,
-        vector<cv::Point3d> &points
+        const vector<cv::KeyPoint> &_keypoint_1,
+        const vector<cv::KeyPoint> &_keypoint_2,
+        const std::vector<cv::DMatch> &_matches,
+        const cv::Mat &_R, const cv::Mat &_t,
+        vector<cv::Point3d> &_points
 );
 
 #endif //TRIANGULATION_EXAMPLE_FRONTEND_H_
